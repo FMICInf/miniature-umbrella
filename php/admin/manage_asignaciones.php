@@ -32,6 +32,31 @@ try {
 ?>
 <!DOCTYPE html>
 <html lang="es">
+
+<style>
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        table-layout: fixed;
+    }
+    th, td {
+        border: 1px solid #ddd;
+        padding: 8px;
+        text-align: center;
+        word-wrap: break-word;
+    }
+    th {
+        background-color: #f2f2f2;
+    }
+    /* Ajustes personalizados para cada columna */
+    th:nth-child(1), td:nth-child(1) { width: 50px; }  /* ID */
+    th:nth-child(2), td:nth-child(2) { width: 120px; } /* Fecha */
+    th:nth-child(3), td:nth-child(3) { width: 150px; } /* Conductor */
+    th:nth-child(4), td:nth-child(4) { width: 100px; } /* Vehículo */
+    th:nth-child(5), td:nth-child(5) { width: 200px; } /* Ruta */
+    th:nth-child(6), td:nth-child(6) { width: 150px; } /* Creado en */
+</style>
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">

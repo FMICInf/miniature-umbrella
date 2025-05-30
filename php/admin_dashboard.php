@@ -21,7 +21,7 @@ if (empty($_SESSION['rol']) || $_SESSION['rol'] !== 'admin') {
         <h1>Panel de Administrador</h1>
         <nav>
             <ul class="menu">
-                <li><a href="admin_dashboard.php">Dashboard</a></li>
+                <li><a href="dashboard.php">Dashboard</a></li>
                 <li><a href="admin/manage_users.php">Gestionar Usuarios</a></li>
                 <li><a href="admin/manage_vehiculos.php">Gestionar Vehículos</a></li>
                 <li><a href="admin/manage_rutas.php">Gestionar Rutas</a></li>
