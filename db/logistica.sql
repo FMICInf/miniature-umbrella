@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 29-05-2025 a las 10:20:36
+-- Tiempo de generación: 10-06-2025 a las 23:00:10
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -41,11 +41,7 @@ CREATE TABLE `asignaciones` (
 --
 
 INSERT INTO `asignaciones` (`id`, `vehiculo_id`, `conductor_id`, `ruta_id`, `fecha`, `creado_at`) VALUES
-(1, 1, 2, 1, '2025-05-22', '2025-05-23 05:10:30'),
-(2, 3, 3, 2, '2025-05-23', '2025-05-23 05:10:30'),
-(3, 1, 2, 3, '2025-05-24', '2025-05-23 05:10:30'),
-(5, 2, 3, 7, '2025-06-04', '2025-05-29 06:19:54'),
-(6, 4, 2, 14, '2025-06-04', '2025-05-29 06:21:12');
+(11, 3, 3, 31, '2025-06-11', '2025-06-10 20:11:47');
 
 -- --------------------------------------------------------
 
@@ -93,19 +89,9 @@ CREATE TABLE `rutas` (
 
 INSERT INTO `rutas` (`id`, `origen`, `destino`, `horario_salida`, `horario_llegada`, `distancia_km`, `creado_at`) VALUES
 (1, 'Coyhaique', 'Puerto Aysén', '08:00:00', '09:15:00', 75.40, '2025-05-23 05:10:30'),
-(2, 'Coyhaique', 'Puerto Chacabuco', '10:00:00', '12:00:00', 140.00, '2025-05-23 05:10:30'),
 (3, 'Puerto Aysén', 'Puerto Chacabuco', '13:30:00', '14:30:00', 60.50, '2025-05-23 05:10:30'),
-(4, 'Coyhaique', 'Santiago', '06:30:00', '00:00:00', NULL, '2025-05-23 07:56:48'),
-(5, 'Coyhaique', 'Cochrane', '06:40:00', '00:00:00', NULL, '2025-05-29 04:36:52'),
-(6, 'Puerto Aysén', 'Cochrane', '05:40:00', '00:00:00', NULL, '2025-05-29 04:38:47'),
-(7, 'Puerto Aysén', 'Coyhaique', '06:30:00', '00:00:00', NULL, '2025-05-29 04:43:11'),
-(8, 'Puerto Aysén', 'Puerto Chacabuco', '06:30:00', '00:00:00', NULL, '2025-05-29 04:43:40'),
-(9, 'Puerto Aysén', 'Santiago', '04:50:00', '00:00:00', NULL, '2025-05-29 04:48:22'),
-(10, 'Coyhaique', 'Cochrane', '06:30:00', '00:00:00', NULL, '2025-05-29 05:01:18'),
-(11, 'Coyhaique', 'Puerto Chacabuco', '06:30:00', '00:00:00', NULL, '2025-05-29 05:07:22'),
-(12, 'Coyhaique', 'Santiago', '12:30:00', '00:00:00', NULL, '2025-05-29 05:41:22'),
-(13, 'Coyhaique', 'Puerto Aysén', '13:20:00', '00:00:00', NULL, '2025-05-29 06:04:32'),
-(14, 'Coyhaique', 'Cochrane', '12:30:00', '00:00:00', NULL, '2025-05-29 06:20:50');
+(30, 'Lillo', 'Cerro Castillo', '12:06:00', '14:30:00', NULL, '2025-06-10 20:06:57'),
+(31, 'Lillo', 'Cerro Castillo', '12:10:00', '00:00:00', NULL, '2025-06-10 20:11:14');
 
 -- --------------------------------------------------------
 
@@ -118,6 +104,11 @@ CREATE TABLE `solicitudes` (
   `usuario_id` int(11) NOT NULL,
   `ruta_id` int(11) NOT NULL,
   `fecha_solicitada` date NOT NULL,
+  `horario_salida` time DEFAULT NULL,
+  `hora_regreso` time DEFAULT NULL,
+  `motivo` varchar(50) NOT NULL DEFAULT 'Salida A Terreno',
+  `motivo_otro` varchar(255) DEFAULT NULL,
+  `adjunto` varchar(255) DEFAULT NULL,
   `estado` enum('pendiente','confirmada','cancelada') NOT NULL DEFAULT 'pendiente',
   `creado_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `actualizado_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
@@ -127,20 +118,10 @@ CREATE TABLE `solicitudes` (
 -- Volcado de datos para la tabla `solicitudes`
 --
 
-INSERT INTO `solicitudes` (`id`, `usuario_id`, `ruta_id`, `fecha_solicitada`, `estado`, `creado_at`, `actualizado_at`) VALUES
-(1, 4, 1, '2025-05-22', 'cancelada', '2025-05-23 05:10:30', '2025-05-29 04:35:52'),
-(2, 5, 2, '2025-05-23', 'confirmada', '2025-05-23 05:10:30', '2025-05-23 05:10:30'),
-(3, 4, 3, '2025-05-24', 'cancelada', '2025-05-23 05:10:30', '2025-05-23 05:10:30'),
-(4, 4, 6, '2025-06-02', 'cancelada', '2025-05-29 04:41:55', '2025-05-29 04:42:20'),
-(5, 4, 8, '2025-06-05', 'cancelada', '2025-05-29 04:43:40', '2025-05-29 04:44:30'),
-(6, 4, 9, '2025-06-01', 'cancelada', '2025-05-29 04:48:22', '2025-05-29 04:48:27'),
-(7, 4, 10, '2025-06-03', 'cancelada', '2025-05-29 05:01:18', '2025-05-29 05:01:38'),
-(8, 4, 11, '2025-06-08', 'confirmada', '2025-05-29 05:07:22', '2025-05-29 05:29:03'),
-(9, 4, 11, '2025-05-31', 'cancelada', '2025-05-29 05:30:00', '2025-05-29 05:30:17'),
-(10, 5, 12, '2025-06-12', 'confirmada', '2025-05-29 05:41:22', '2025-05-29 05:55:29'),
-(11, 5, 13, '2025-06-04', 'confirmada', '2025-05-29 06:04:32', '2025-05-29 06:04:45'),
-(12, 5, 7, '2025-06-04', 'confirmada', '2025-05-29 06:19:42', '2025-05-29 06:19:54'),
-(13, 5, 14, '2025-06-04', 'confirmada', '2025-05-29 06:20:50', '2025-05-29 06:21:12');
+INSERT INTO `solicitudes` (`id`, `usuario_id`, `ruta_id`, `fecha_solicitada`, `horario_salida`, `hora_regreso`, `motivo`, `motivo_otro`, `adjunto`, `estado`, `creado_at`, `actualizado_at`) VALUES
+(1, 4, 1, '2025-05-22', NULL, NULL, 'Salida A Terreno', NULL, NULL, 'cancelada', '2025-05-23 05:10:30', '2025-05-29 04:35:52'),
+(3, 4, 3, '2025-05-24', NULL, NULL, 'Salida A Terreno', NULL, NULL, 'cancelada', '2025-05-23 05:10:30', '2025-05-23 05:10:30'),
+(24, 4, 31, '2025-06-11', '12:10:00', '18:11:00', 'Salida A Terreno', NULL, NULL, 'confirmada', '2025-06-10 20:11:14', '2025-06-10 20:11:47');
 
 -- --------------------------------------------------------
 
@@ -190,10 +171,9 @@ CREATE TABLE `vehiculos` (
 --
 
 INSERT INTO `vehiculos` (`id`, `patente`, `marca`, `modelo`, `anio`, `estado`, `disponibilidad`, `creado_at`) VALUES
-(1, 'CPX-101', 'Toyota', 'Hilux', '2018', 'activo', 'disponible', '2025-05-23 05:10:30'),
-(2, 'DSQ-202', 'Ford', 'Ranger', '2020', 'en_mantenimiento', 'disponible', '2025-05-23 05:10:30'),
-(3, 'LRV-303', 'Chevrolet', 'D-Max', '2019', 'activo', 'ocupado', '2025-05-23 05:10:30'),
-(4, 'MTB-404', 'Mitsubishi', 'L200', '2017', 'inactivo', 'disponible', '2025-05-23 05:10:30');
+(3, 'LRV-301', 'Chevrolet', 'D-Max', '2020', 'activo', 'ocupado', '2025-05-23 05:10:30'),
+(4, 'MTB-404', 'Mitsubishi', 'L200', '2017', 'en_mantenimiento', 'reservado', '2025-05-23 05:10:30'),
+(7, 'TYT-2022sa', 'wwww', '2222', '2001', 'activo', 'ocupado', '2025-05-30 05:25:37');
 
 --
 -- Índices para tablas volcadas
@@ -252,7 +232,7 @@ ALTER TABLE `vehiculos`
 -- AUTO_INCREMENT de la tabla `asignaciones`
 --
 ALTER TABLE `asignaciones`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
 
 --
 -- AUTO_INCREMENT de la tabla `conductores`
@@ -264,25 +244,25 @@ ALTER TABLE `conductores`
 -- AUTO_INCREMENT de la tabla `rutas`
 --
 ALTER TABLE `rutas`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=32;
 
 --
 -- AUTO_INCREMENT de la tabla `solicitudes`
 --
 ALTER TABLE `solicitudes`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=25;
 
 --
 -- AUTO_INCREMENT de la tabla `usuarios`
 --
 ALTER TABLE `usuarios`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- AUTO_INCREMENT de la tabla `vehiculos`
 --
 ALTER TABLE `vehiculos`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 --
 -- Restricciones para tablas volcadas
