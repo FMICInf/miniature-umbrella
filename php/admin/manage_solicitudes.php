@@ -1,29 +1,51 @@
 <?php
 session_start();
 require_once __DIR__ . '/../config.php';
+
 // Validar sesión y rol de admin
 if (empty($_SESSION['user_id']) || $_SESSION['rol'] !== 'admin') {
-    header('Location: ../index.php'); exit;
+    header('Location: ../index.php');
+    exit;
 }
 
 try {
-    // Obtener solicitudes pendientes
-    $stmt = $pdo->query(
-        "SELECT s.id, u.nombre AS usuario, r.id AS ruta_id, r.origen, r.destino,
-                s.fecha_solicitada, r.horario_salida
-         FROM solicitudes s
-         JOIN usuarios u ON s.usuario_id = u.id
-         JOIN rutas    r ON s.ruta_id     = r.id
-         WHERE s.estado = 'pendiente'
-         ORDER BY s.fecha_solicitada DESC"
-    );
-    $solicitudes = $stmt->fetchAll();
-    // Obtener lista de conductores
-    $condStmt = $pdo->query("SELECT id, nombre FROM usuarios WHERE rol = 'conductor' ORDER BY nombre");
-    $conductores = $condStmt->fetchAll();
-    // Obtener lista de vehículos disponibles
-    $vehStmt = $pdo->query("SELECT id, patente FROM vehiculos WHERE disponibilidad = 'disponible'");
-    $vehiculos = $vehStmt->fetchAll();
+    // 1) Solicitudes pendientes
+    $stmt = $pdo->query("
+        SELECT
+            s.id,
+            u.nombre AS usuario,
+            r.id   AS ruta_id,
+            r.origen,
+            r.destino,
+            s.fecha_solicitada,
+            r.horario_salida
+        FROM solicitudes s
+        JOIN usuarios u ON s.usuario_id = u.id
+        JOIN rutas    r ON s.ruta_id     = r.id
+        WHERE s.estado = 'pendiente'
+        ORDER BY s.fecha_solicitada DESC
+    ");
+    $solicitudes = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // 2) Conductores
+    $condStmt = $pdo->query("
+        SELECT id, nombre
+        FROM usuarios
+        WHERE rol = 'conductor'
+        ORDER BY nombre
+    ");
+    $conductores = $condStmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // 3) Vehículos — ahora sin filtrar por disponibilidad, muestra todos
+    $vehStmt = $pdo->query("
+        SELECT id, patente
+        FROM vehiculos
+        /* WHERE disponibilidad = 'disponible' */ 
+        WHERE estado = 'activo'
+        ORDER BY patente
+    ");
+    $vehiculos = $vehStmt->fetchAll(PDO::FETCH_ASSOC);
+
 } catch (PDOException $e) {
     die('Error BD: ' . $e->getMessage());
 }
@@ -32,22 +54,26 @@ try {
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin – Asignar Conductor y Vehículo</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Admin – Gestionar Solicitudes</title>
   <link rel="stylesheet" href="../../assets/css/style.css">
 </head>
 <body>
   <header class="header-inner">
-    <h1>Asignar Conductor y Vehículo</h1>
+    <h1>Solicitudes Pendientes</h1>
     <nav>
       <ul class="menu">
         <li><a href="../admin_dashboard.php">Dashboard</a></li>
         <li><a href="manage_solicitudes.php" class="active">Solicitudes</a></li>
         <li><a href="manage_asignaciones.php">Asignaciones</a></li>
+        <li><a href="manage_vehiculos.php">Vehículos</a></li>
+        <li><a href="manage_rutas.php">Rutas</a></li>
+        <li><a href="manage_users.php">Usuarios</a></li>
         <li><a href="../logout.php">Cerrar sesión</a></li>
       </ul>
     </nav>
   </header>
+
   <main class="container">
     <section class="card">
       <?php if (empty($solicitudes)): ?>
@@ -56,8 +82,14 @@ try {
         <table>
           <thead>
             <tr>
-              <th>ID</th><th>Usuario</th><th>Ruta</th><th>Fecha</th><th>Horario</th>
-              <th>Conductor</th><th>Vehículo</th><th>Acciones</th>
+              <th>ID</th>
+              <th>Usuario</th>
+              <th>Ruta</th>
+              <th>Fecha</th>
+              <th>Horario</th>
+              <th>Conductor</th>
+              <th>Vehículo</th>
+              <th>Acciones</th>
             </tr>
           </thead>
           <tbody>
@@ -70,7 +102,7 @@ try {
               <td><?= $s['horario_salida'] ?></td>
               <td>
                 <select class="select-driver" data-id="<?= $s['id'] ?>">
-                  <option value="">-- Conductor --</option>
+                  <option value="">-- Seleccionar --</option>
                   <?php foreach ($conductores as $c): ?>
                     <option value="<?= $c['id'] ?>"><?= htmlspecialchars($c['nombre']) ?></option>
                   <?php endforeach; ?>
@@ -78,7 +110,7 @@ try {
               </td>
               <td>
                 <select class="select-vehicle" data-id="<?= $s['id'] ?>">
-                  <option value="">-- Vehículo --</option>
+                  <option value="">-- Seleccionar --</option>
                   <?php foreach ($vehiculos as $v): ?>
                     <option value="<?= $v['id'] ?>"><?= htmlspecialchars($v['patente']) ?></option>
                   <?php endforeach; ?>
@@ -95,47 +127,70 @@ try {
       <?php endif; ?>
     </section>
   </main>
-  <div id="toast" class="toast-container"></div>
+
+  <div id="toast-container"></div>
+
   <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      const showToast = msg => {
-        const c = document.getElementById('toast');
-        const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg;
-        c.appendChild(t); setTimeout(() => c.removeChild(t), 3000);
-      };
-      document.querySelectorAll('.btn-assign').forEach(btn => btn.addEventListener('click', () => {
-        const id = btn.dataset.id;
+  document.addEventListener('DOMContentLoaded', () => {
+    const showToast = msg => {
+      const c = document.getElementById('toast-container');
+      const t = document.createElement('div');
+      t.className = 'toast';
+      t.textContent = msg;
+      c.appendChild(t);
+      setTimeout(() => t.remove(), 3000);
+    };
+
+    // Asignar conductor + vehículo
+    document.querySelectorAll('.btn-assign').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id       = btn.dataset.id;
         const driverId = document.querySelector(`.select-driver[data-id="${id}"]`).value;
         const vehId    = document.querySelector(`.select-vehicle[data-id="${id}"]`).value;
         if (!driverId) return showToast('Selecciona un conductor');
         if (!vehId)    return showToast('Selecciona un vehículo');
-        if (!confirm(`Asignar solicitud ${id}?`)) return;
+        if (!confirm(`¿Asignar solicitud ${id}?`)) return;
+
         fetch('approve_solicitud.php', {
-          method: 'POST', headers: {'Content-Type':'application/x-www-form-urlencoded'},
-          body: `id=${encodeURIComponent(id)}&conductor_id=${driverId}&vehiculo_id=${vehId}`
+          method: 'POST',
+          headers: { 'Content-Type':'application/x-www-form-urlencoded' },
+          body: `id=${encodeURIComponent(id)}&conductor_id=${encodeURIComponent(driverId)}&vehiculo_id=${encodeURIComponent(vehId)}`
         })
-        .then(r => r.json()).then(json => {
+        .then(r => r.json())
+        .then(json => {
           if (json.success) {
             document.querySelector(`tr[data-id="${id}"]`).remove();
-            showToast('Asignación creada');
-          } else showToast('Error: '+json.message);
+            showToast('Solicitud asignada y confirmada');
+          } else {
+            showToast('Error: ' + json.message);
+          }
         });
-      }));
-      document.querySelectorAll('.btn-reject').forEach(btn => btn.addEventListener('click', () => {
+      });
+    });
+
+    // Rechazar solicitud
+    document.querySelectorAll('.btn-reject').forEach(btn => {
+      btn.addEventListener('click', () => {
         const id = btn.dataset.id;
-        if (!confirm(`Rechazar solicitud ${id}?`)) return;
+        if (!confirm(`¿Rechazar solicitud ${id}?`)) return;
+
         fetch('reject_solicitud.php', {
-          method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'},
-          body:`id=${encodeURIComponent(id)}`
+          method: 'POST',
+          headers: { 'Content-Type':'application/x-www-form-urlencoded' },
+          body: `id=${encodeURIComponent(id)}`
         })
-        .then(r => r.json()).then(json => {
+        .then(r => r.json())
+        .then(json => {
           if (json.success) {
             document.querySelector(`tr[data-id="${id}"]`).remove();
             showToast('Solicitud rechazada');
-          } else showToast('Error: '+json.message);
+          } else {
+            showToast('Error: ' + json.message);
+          }
         });
-      }));
+      });
     });
+  });
   </script>
 </body>
 </html>

@@ -12,18 +12,30 @@ $stmtHoy->execute([$hoy]);
 $asignacionesHoy = $stmtHoy->fetchColumn();
 $mantenimiento   = $pdo->query("SELECT COUNT(*) FROM vehiculos WHERE estado = 'en_mantenimiento'")->fetchColumn();
 
-// ===== 2. Eventos para calendario =====
+// ===== 2. Eventos para calendario (fecha + hora + conductor) =====
 $events = [];
 $stmt = $pdo->query(
-    "SELECT a.fecha, r.origen, r.destino
+    "SELECT 
+         a.fecha,
+         r.origen,
+         r.destino,
+         r.horario_salida,
+         u.nombre AS conductor
      FROM asignaciones a
-     JOIN rutas r ON a.ruta_id = r.id
+     JOIN rutas    r ON a.ruta_id      = r.id
+     JOIN usuarios u ON a.conductor_id = u.id
      ORDER BY a.fecha"
 );
-while ($row = $stmt->fetch()) {
+while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+    // Combina fecha y hora para un evento con hora específica
     $events[] = [
-        'title' => $row['origen'] . ' → ' . $row['destino'],
-        'start' => $row['fecha'],
+        'title'        => "{$row['origen']} → {$row['destino']}",
+        'start'        => $row['fecha'] . 'T' . $row['horario_salida'],
+        'allDay'       => false,
+        'extendedProps'=> [
+            'hora'      => $row['horario_salida'],
+            'conductor' => $row['conductor']
+        ]
     ];
 }
 
@@ -31,50 +43,63 @@ while ($row = $stmt->fetch()) {
 $upcomingStmt = $pdo->prepare(
     "SELECT a.fecha, r.origen, r.destino, u.nombre AS conductor
      FROM asignaciones a
-     JOIN rutas r ON a.ruta_id = r.id
+     JOIN rutas    r ON a.ruta_id      = r.id
      JOIN usuarios u ON a.conductor_id = u.id
      WHERE a.fecha >= CURDATE()
      ORDER BY a.fecha
      LIMIT 10"
 );
 $upcomingStmt->execute();
-$upcoming = $upcomingStmt->fetchAll();
+$upcoming = $upcomingStmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Dashboard – Logística</title>
   <!-- CSS principal -->
   <link rel="stylesheet" href="../assets/css/style.css">
   <!-- FullCalendar CSS -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/main.min.css">
   <style>
-    .metrics { display: grid; grid-template-columns: repeat(auto-fit,minmax(150px,1fr)); gap: 1rem; margin-bottom:2rem; }
-    .card { background:#fff; padding:1rem; border-radius:8px; box-shadow:0 1px 3px rgba(0,0,0,0.1); text-align:center; }
-    .card h3 { margin:0 0 .5rem; font-size:1rem; color:#004080; }
-    .card p { font-size:1.5rem; margin:0; }
-    .filter { margin-bottom:1rem; }
-    .filter label { margin-right:1rem; }
-    /* Eliminado height fijo para permitir altura automática */
-    #calendar { max-width:900px; margin:2rem auto; background:#fff; border-radius:8px; box-shadow:0 2px 4px rgba(0,0,0,0.1); padding:1rem; }
-    table { width:100%; border-collapse:collapse; margin-top:2rem; }
-    th, td { padding:.75rem; text-align:left; border-bottom:1px solid #ddd; }
-    th { background:#004080; color:#fff; }
+    /* Hover sobre celdas de día en Month view */
+#calendar .fc-daygrid-day-frame:hover {
+  background-color: #eef6ff;  /* color suave, ajústalo a tu paleta */
+  transition: background-color 0.2s ease;
+}
+
+/* Mantener puntero de enlace */
+#calendar .fc-daygrid-day-frame:hover,
+#calendar .fc-event {
+  cursor: pointer;
+}
+
+/* Opcional: evento también destaque al pasar */
+#calendar .fc-event:hover {
+  opacity: 0.85;
+}
+
+    .metrics { display: grid; grid-template-columns: repeat(auto-fit,minmax(150px,1fr)); gap:1rem; margin-bottom:2rem; }
+    .card    { background:#fff; padding:1rem; border-radius:8px; box-shadow:0 1px 3px rgba(0,0,0,0.1); text-align:center; }
+    .filter  { margin-bottom:1rem; }
+    #calendar{ max-width:900px; margin:2rem auto; background:#fff; border-radius:8px; box-shadow:0 2px 4px rgba(0,0,0,0.1); padding:1rem; }
+    table    { width:100%; border-collapse:collapse; margin-top:2rem; }
+    th,td    { padding:.75rem; border-bottom:1px solid #ddd; text-align:left; }
+    th       { background:#004080; color:#fff; }
   </style>
 </head>
 <body>
   <header class="header-inner">
-    <h1><?= htmlspecialchars($_SESSION['username'] ?? 'Invitado', ENT_QUOTES, 'UTF-8') ?></h1>
+    <h1><?= htmlspecialchars($_SESSION['username'] ?? 'Invitado', ENT_QUOTES) ?></h1>
     <nav>
       <ul class="menu">
         <?php if (!empty($_SESSION['rol'])): ?>
-          <?php if ($_SESSION['rol'] === 'admin'): ?>
+          <?php if ($_SESSION['rol']==='admin'): ?>
             <li><a href="admin_dashboard.php">Panel Admin</a></li>
-          <?php elseif ($_SESSION['rol'] === 'conductor'): ?>
+          <?php elseif ($_SESSION['rol']==='conductor'): ?>
             <li><a href="conductor_dashboard.php">Mis Asignaciones</a></li>
-          <?php elseif ($_SESSION['rol'] === 'usuario'): ?>
+          <?php elseif ($_SESSION['rol']==='usuario'): ?>
             <li><a href="user_dashboard.php">Solicitar Transporte</a></li>
           <?php endif; ?>
           <li><a href="logout.php">Cerrar sesión</a></li>
@@ -105,11 +130,13 @@ $upcoming = $upcomingStmt->fetchAll();
     <section class="upcoming">
       <h2>Próximos viajes</h2>
       <table id="upcomingTable">
-        <thead><tr><th>Fecha</th><th>Ruta</th><th>Conductor</th></tr></thead>
+        <thead>
+          <tr><th>Fecha</th><th>Ruta</th><th>Conductor</th></tr>
+        </thead>
         <tbody>
           <?php foreach ($upcoming as $row): ?>
-            <tr data-fecha="<?= $row['fecha'] ?>">
-              <td><?= $row['fecha'] ?></td>
+            <tr>
+              <td><?= htmlspecialchars($row['fecha']) ?></td>
               <td><?= htmlspecialchars("{$row['origen']} → {$row['destino']}") ?></td>
               <td><?= htmlspecialchars($row['conductor']) ?></td>
             </tr>
@@ -119,44 +146,14 @@ $upcoming = $upcomingStmt->fetchAll();
     </section>
   </main>
 
-  <!-- FullCalendar UMD JS -->
+  <!-- Inyecta eventos PHP en JS -->
+  <script>
+    window.calendarEvents = <?= json_encode($events, JSON_HEX_TAG) ?>;
+  </script>
+  <!-- FullCalendar UMD -->
   <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/locales-all.global.min.js"></script>
-  <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      var eventsData = <?= json_encode($events) ?>;
-      var calendarEl = document.getElementById('calendar');
-      var calendar = new FullCalendar.Calendar(calendarEl, {
-        height: 'auto',
-        contentHeight: 'auto',
-        initialView: 'dayGridMonth',
-        locale: 'es',
-        headerToolbar: {
-          left: 'prev,next today',
-          center: 'title',
-          right: 'dayGridMonth,timeGridWeek,timeGridDay'
-        },
-        events: eventsData
-      });
-      calendar.render();
-
-      document.getElementById('applyFilter').addEventListener('click', function() {
-        var from = document.getElementById('fromDate').value;
-        var to   = document.getElementById('toDate').value;
-        var filtered = eventsData.filter(function(ev) {
-          return (!from || ev.start >= from) && (!to || ev.start <= to);
-        });
-        calendar.removeAllEvents();
-        calendar.addEventSource(filtered);
-      });
-
-      document.getElementById('resetFilter').addEventListener('click', function() {
-        document.getElementById('fromDate').value = '';
-        document.getElementById('toDate').value = '';
-        calendar.removeAllEvents();
-        calendar.addEventSource(eventsData);
-      });
-    });
-  </script>
+  <!-- Inicializador -->
+  <script src="../assets/js/calendar.js"></script>
 </body>
 </html>
