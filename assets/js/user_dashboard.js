@@ -1,47 +1,87 @@
 // assets/js/user_dashboard.js
 document.addEventListener('DOMContentLoaded', () => {
-  const form            = document.getElementById('solForm');
-  const roundTripCheck  = document.getElementById('round_trip');
-  const returnGroup     = document.getElementById('returnTimeGroup');
-  const returnInput     = document.getElementById('hora_regreso');
-  const motivoSelect    = document.getElementById('motivo');
-  const motivoOtroGroup = document.getElementById('motivoOtroGroup');
-  const motivoOtroInput = document.getElementById('motivo_otro');
-  const toastContainer  = document.getElementById('toast');
+  const origenInput    = document.getElementById('origen');
+  const destinoInput   = document.getElementById('destino');
+  const dateInput      = document.getElementById('fecha_solicitada');
+  const timeInput      = document.getElementById('horario_salida');
+  const returnTimeInput= document.getElementById('hora_regreso');
+  const roundTripCheck = document.getElementById('round_trip');
+  const returnGroup    = document.getElementById('returnTimeGroup');
+  const motivoSelect   = document.getElementById('motivo');
+  const motivoOtroGrp  = document.getElementById('motivoOtroGroup');
+  const motivoOtroIn   = document.getElementById('motivo_otro');
+  const adjInput       = document.getElementById('adjunto');
+  const form           = document.getElementById('solForm');
+  const toastCont      = document.getElementById('toast');
 
   function showToast(msg) {
     const t = document.createElement('div');
     t.className = 'toast';
     t.textContent = msg;
-    toastContainer.appendChild(t);
+    toastCont.appendChild(t);
     setTimeout(() => t.remove(), 3000);
   }
 
-  // Mostrar/hide hora de regreso
+  // Mostrar/ocultar regreso
   roundTripCheck.addEventListener('change', () => {
     if (roundTripCheck.checked) {
       returnGroup.classList.remove('hidden');
-      returnInput.required = true;
+      returnTimeInput.required = true;
     } else {
       returnGroup.classList.add('hidden');
-      returnInput.required = false;
-      returnInput.value = '';
+      returnTimeInput.required = false;
+      returnTimeInput.value = '';
     }
   });
 
-  // Mostrar/hide motivo “Otro”
+  // Mostrar/ocultar motivo otro
   motivoSelect.addEventListener('change', () => {
     if (motivoSelect.value === 'Otro') {
-      motivoOtroGroup.classList.remove('hidden');
-      motivoOtroInput.required = true;
+      motivoOtroGrp.classList.remove('hidden');
+      motivoOtroIn.required = true;
     } else {
-      motivoOtroGroup.classList.add('hidden');
-      motivoOtroInput.required = false;
-      motivoOtroInput.value = '';
+      motivoOtroGrp.classList.add('hidden');
+      motivoOtroIn.required = false;
+      motivoOtroIn.value = '';
     }
   });
 
-  // Enviar formulario con FormData (incluye adjunto)
+  // Función para bloquear horarios ya asignados
+  function updateBlockedTimes() {
+    const origen  = origenInput.value;
+    const destino = destinoInput.value;
+    const fecha   = dateInput.value;
+    if (!origen || !destino || !fecha) return;
+    fetch(`/log/php/get_assigned_times.php?origen=${encodeURIComponent(origen)}&destino=${encodeURIComponent(destino)}&fecha=${encodeURIComponent(fecha)}`)
+      .then(res => res.json())
+      .then(json => {
+        if (!json.success) return showToast(json.message);
+        // primero habilitar todas las opciones
+        [timeInput, returnTimeInput].forEach(inp => {
+          Array.from(inp.options).forEach(opt => opt.disabled = false);
+        });
+        // deshabilitar las ocupadas
+        json.data.forEach(slot => {
+          const start = slot.horario_salida;
+          const end   = slot.hora_regreso;
+          [timeInput, returnTimeInput].forEach(inp => {
+            Array.from(inp.options).forEach(opt => {
+              if (opt.value === start || (end && opt.value === end)) {
+                opt.disabled = true;
+              }
+            });
+          });
+        });
+      })
+      .catch(() => showToast('No se pudieron cargar horarios'));
+  }
+
+  // Disparar bloqueo al cambiar ruta o fecha
+  [origenInput, destinoInput, dateInput].forEach(el =>
+    el.addEventListener('change', updateBlockedTimes)
+  );
+
+  // Enviar solicitud
   form.addEventListener('submit', e => {
     e.preventDefault();
     const data = new FormData(form);
@@ -52,8 +92,8 @@ document.addEventListener('DOMContentLoaded', () => {
     .then(r => r.json())
     .then(json => {
       if (json.success) {
-        showToast('Solicitud enviada con éxito');
-        // TODO: actualizar tabla y métricas en caliente
+        showToast('Solicitud enviada');
+        // actualizar tabla/métricas si lo deseas…
       } else {
         showToast('Error: ' + json.message);
       }
@@ -61,14 +101,14 @@ document.addEventListener('DOMContentLoaded', () => {
     .catch(() => showToast('Error de red'));
   });
 
-  // Cancelar solicitud…
-  document.querySelectorAll('.btn-cancel').forEach(btn => {
+  // Cancelar solicitudes
+  document.querySelectorAll('.btn-cancel').forEach(btn =>
     btn.addEventListener('click', () => {
       if (!confirm('¿Cancelar esta solicitud?')) return;
       fetch('/log/php/cancel_solicitud.php', {
-        method:'POST',
-        headers:{'Content-Type':'application/x-www-form-urlencoded'},
-        body:'id='+encodeURIComponent(btn.dataset.id)
+        method: 'POST',
+        headers:{ 'Content-Type':'application/x-www-form-urlencoded' },
+        body: 'id=' + encodeURIComponent(btn.dataset.id)
       })
       .then(r => r.json())
       .then(json => {
@@ -76,13 +116,9 @@ document.addEventListener('DOMContentLoaded', () => {
           btn.disabled = true;
           btn.closest('tr').querySelector('.badge').textContent = 'Cancelada';
           showToast('Solicitud cancelada');
-        } else {
-          showToast('Error: '+json.message);
-        }
+        } else showToast('Error: ' + json.message);
       })
       .catch(() => showToast('Error de red'));
-    });
-  });
-
-  // TODO: Polling si lo necesitas…
+    })
+  );
 });

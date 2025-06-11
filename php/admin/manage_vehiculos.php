@@ -7,10 +7,10 @@ if (empty($_SESSION['user_id']) || $_SESSION['rol'] !== 'admin') {
     header('Location: ../index.php');
     exit;
 }
-// Obtener lista de vehículos
 try {
+    // Obtener lista de vehículos con capacidad
     $stmt = $pdo->query(
-        "SELECT id, patente, marca, modelo, anio, estado, disponibilidad
+        "SELECT id, patente, marca, modelo, anio, estado, disponibilidad, capacidad
          FROM vehiculos
          ORDER BY creado_at DESC"
     );
@@ -23,61 +23,45 @@ try {
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Admin – Gestionar Vehículos</title>
   <link rel="stylesheet" href="../../assets/css/style.css">
   <style>
-    /* Modal Styles */
-    .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-             background: rgba(0, 0, 0, 0.5); display: none;
-             align-items: center; justify-content: center; }
-    .modal-content { position: relative; background: #fff; padding: 2rem; border-radius: 8px;
-                     width: 90%; max-width: 500px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-    .modal-content label { display: block; margin-bottom: 1rem; }
-    .modal-content input, .modal-content select { width: 100%; padding: .5rem; margin-top: .25rem; }
-    .modal-actions { text-align: right; margin-top: 1rem; }
-    .modal-close { position: absolute; top: .5rem; right: .5rem; background: none; border: none;
-                   font-size: 1.5rem; cursor: pointer; }
+    /* Modal */
+    .modal { position: fixed; top:0; left:0; width:100%; height:100%;
+             background:rgba(0,0,0,0.5); display:none;
+             align-items:center; justify-content:center; }
+    .modal.active { display:flex; }
+    .modal-content { background:#fff; padding:2rem; border-radius:8px;
+                     width:90%; max-width:500px; position:relative; box-shadow:0 2px 10px rgba(0,0,0,0.1); }
+    .modal-close { position:absolute; top:.5rem; right:.5rem; background:none; border:none;
+                   font-size:1.5rem; cursor:pointer; }
+    .modal-content label { display:block; margin-bottom:1rem; }
+    .modal-content input, .modal-content select { width:100%; padding:.5rem; margin-top:.25rem; }
+    .modal-actions { text-align:right; margin-top:1rem; }
     /* Toast */
-    .toast { position: fixed; bottom: 1rem; right: 1rem;
-             background: #333; color: #fff; padding: 1rem; border-radius: 4px;
-             opacity: 0.9; }
+    #toast-container { position:fixed; bottom:1rem; right:1rem; z-index:1000; }
+    .toast { background:#333; color:#fff; padding:1rem; margin-top:.5rem; border-radius:4px; }
 
+    /* Tabla */
+    table { width:100%; border-collapse:collapse; table-layout:fixed; }
+    th, td { border:1px solid #ddd; padding:.75rem; word-wrap:break-word; text-align:center; }
+    th { background:#f2f2f2; }
 
+    /* Botones */
+    .btn { padding:6px 12px; font-size:14px; }
+    .btn-edit, .btn-delete { margin:2px 0; width:80px; }
 
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    table-layout: fixed; /* Forzar ancho fijo */
-  }
-  th, td {
-    border: 1px solid #ddd;
-    padding: 8px;
-    text-align: center;
-    word-wrap: break-word;
-  }
-  th {
-    background-color: #f2f2f2;
-  }
-  .btn {
-    padding: 6px 12px;
-    font-size: 14px;
-  }
-  .btn-edit, .btn-delete {
-    margin: 2px 0;
-    width: 80px;
-  }
-  /* Ajustes de columna (opcional) */
-  th:nth-child(1), td:nth-child(1) { width: 50px; } /* ID */
-  th:nth-child(2), td:nth-child(2) { width: 100px; } /* Patente */
-  th:nth-child(3), td:nth-child(3) { width: 120px; } /* Marca */
-  th:nth-child(4), td:nth-child(4) { width: 120px; } /* Modelo */
-  th:nth-child(5), td:nth-child(5) { width: 80px; } /* Año */
-  th:nth-child(6), td:nth-child(6) { width: 140px; } /* Estado */
-  th:nth-child(7), td:nth-child(7) { width: 140px; } /* Disponibilidad */
-  th:nth-child(8), td:nth-child(8) { width: 150px; } /* Acciones */
-</style>
-
+    /* Column widths */
+    th:nth-child(1), td:nth-child(1) { width:50px; }
+    th:nth-child(2), td:nth-child(2) { width:100px; }
+    th:nth-child(3), td:nth-child(3) { width:120px; }
+    th:nth-child(4), td:nth-child(4) { width:120px; }
+    th:nth-child(5), td:nth-child(5) { width:80px; }
+    th:nth-child(6), td:nth-child(6) { width:140px; }
+    th:nth-child(7), td:nth-child(7) { width:140px; }
+    th:nth-child(8), td:nth-child(8) { width:100px; }
+    th:nth-child(9), td:nth-child(9) { width:160px; }
   </style>
 </head>
 <body>
@@ -90,10 +74,12 @@ try {
         <li><a href="manage_asignaciones.php">Asignaciones</a></li>
         <li><a href="manage_vehiculos.php" class="active">Vehículos</a></li>
         <li><a href="manage_rutas.php">Rutas</a></li>
+        <li><a href="manage_users.php">Usuarios</a></li>
         <li><a href="../logout.php">Cerrar sesión</a></li>
       </ul>
     </nav>
   </header>
+
   <main class="container">
     <section class="card">
       <button id="btn-add" class="btn">+ Agregar Vehículo</button>
@@ -107,6 +93,7 @@ try {
             <th>Año</th>
             <th>Estado</th>
             <th>Disponibilidad</th>
+            <th>Capacidad</th>
             <th>Acciones</th>
           </tr>
         </thead>
@@ -120,6 +107,7 @@ try {
             <td><?= htmlspecialchars($v['anio']) ?></td>
             <td><?= htmlspecialchars($v['estado']) ?></td>
             <td><?= htmlspecialchars($v['disponibilidad']) ?></td>
+            <td><?= htmlspecialchars($v['capacidad']) ?></td>
             <td>
               <button class="btn btn-edit" data-id="<?= $v['id'] ?>">Editar</button>
               <button class="btn btn-delete" data-id="<?= $v['id'] ?>">Eliminar</button>
@@ -132,7 +120,7 @@ try {
   </main>
 
   <!-- Modal agregar/editar vehículo -->
-  <div id="modal" class="modal">
+  <div id="modal" class="modal hidden">
     <form id="formVeh" class="modal-content">
       <button type="button" class="modal-close" aria-label="Cerrar">&times;</button>
       <h2 id="modalTitle">Agregar Vehículo</h2>
@@ -155,6 +143,7 @@ try {
           <option value="ocupado">Ocupado</option>
         </select>
       </label>
+      <label>Capacidad pasajeros:<input name="capacidad" type="number" min="1" required></label>
       <input type="hidden" name="id">
       <div class="modal-actions">
         <button type="submit" class="btn">Guardar</button>
@@ -163,67 +152,100 @@ try {
     </form>
   </div>
 
+  <div id="toast-container"></div>
+
   <script>
-    document.addEventListener('DOMContentLoaded', () => {
-  const modal = document.getElementById('modal');
-  const form = document.getElementById('formVeh');
-  const title = document.getElementById('modalTitle');
-  const closeBtn = document.querySelector('.modal-close');
+  document.addEventListener('DOMContentLoaded', () => {
+    const modal      = document.getElementById('modal');
+    const form       = document.getElementById('formVeh');
+    const titleEl    = document.getElementById('modalTitle');
+    const btnAdd     = document.getElementById('btn-add');
+    const btnClose   = modal.querySelector('.modal-close');
+    const btnCancel  = document.getElementById('btn-cancel');
+    const toastCont  = document.getElementById('toast-container');
 
-  const showModal = (t, data = {}) => {
-    title.textContent = t;
-    Object.keys(data).forEach(k => { if (form[k]) form[k].value = data[k]; });
-    modal.style.display = 'flex';
-  };
-  const hideModal = () => { modal.style.display = 'none'; form.reset(); };
-  const showToast = msg => {
-    const t = document.createElement('div');
-    t.className = 'toast'; t.textContent = msg;
-    document.body.appendChild(t);
-    setTimeout(() => t.remove(), 3000);
-  };
+    function showToast(msg) {
+      const t = document.createElement('div');
+      t.className = 'toast';
+      t.textContent = msg;
+      toastCont.appendChild(t);
+      setTimeout(() => t.remove(), 3000);
+    }
 
-  // Agregar
-  document.getElementById('btn-add').addEventListener('click', () => showModal('Agregar Vehículo'));
-  // Cerrar
-  closeBtn.addEventListener('click', hideModal);
-  document.getElementById('btn-cancel').addEventListener('click', hideModal);
+    function showModal(mode, data = {}) {
+      titleEl.textContent = mode + ' Vehículo';
+      ['id','patente','marca','modelo','anio','estado','disponibilidad','capacidad']
+        .forEach(name => {
+          if (form[name] !== undefined) form[name].value = data[name] ?? '';
+        });
+      modal.classList.add('active');
+      modal.classList.remove('hidden');
+    }
 
-  // Editar
-  document.querySelectorAll('.btn-edit').forEach(btn => btn.addEventListener('click', () => {
-    fetch(`get_vehiculo.php?id=${btn.dataset.id}`)
-      .then(r => r.json()).then(json => {
-        if (json.success) showModal('Editar Vehículo', json.data);
-        else showToast(json.message);
-      });
-  }));
+    function hideModal() {
+      modal.classList.remove('active');
+      modal.classList.add('hidden');
+      form.reset();
+    }
 
-  // Eliminar
-  document.querySelectorAll('.btn-delete').forEach(btn => btn.addEventListener('click', () => {
-    if (!confirm('¿Eliminar vehículo?')) return;
-    fetch('delete_vehiculo.php', {
-      method: 'POST',
-      headers: {'Content-Type':'application/x-www-form-urlencoded'},
-      body: `id=${btn.dataset.id}`
-    })
-    .then(r => r.json()).then(json => {
-      if (json.success) location.reload(); else showToast(json.message);
+    // Agregar
+    btnAdd.addEventListener('click', () => showModal('Agregar'));
+
+    // Cerrar
+    btnClose.addEventListener('click', hideModal);
+    btnCancel.addEventListener('click', hideModal);
+
+    // Editar
+    document.querySelectorAll('.btn-edit').forEach(btn =>
+      btn.addEventListener('click', () => {
+        fetch(`get_vehiculo.php?id=${btn.dataset.id}`)
+          .then(res => res.json())
+          .then(json => {
+            if (!json.success) return showToast(json.message);
+            showModal('Editar', json.data);
+          })
+          .catch(() => showToast('Error de red al cargar vehículo'));
+      })
+    );
+
+    // Eliminar
+    document.querySelectorAll('.btn-delete').forEach(btn =>
+      btn.addEventListener('click', () => {
+        if (!confirm('¿Eliminar este vehículo?')) return;
+        fetch('delete_vehiculo.php', {
+          method: 'POST',
+          headers: {'Content-Type':'application/x-www-form-urlencoded'},
+          body: `id=${encodeURIComponent(btn.dataset.id)}`
+        })
+        .then(res => res.json())
+        .then(json => {
+          if (json.success) location.reload();
+          else showToast(json.message);
+        })
+        .catch(() => showToast('Error de red al eliminar'));
+      })
+    );
+
+    // Guardar
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+      const id  = form.id.value;
+      const url = id
+        ? 'update_vehiculo.php'
+        : 'create_vehiculo.php';
+      const data = new URLSearchParams(new FormData(form));
+      fetch(url, { method: 'POST', body: data })
+        .then(res => res.json())
+        .then(json => {
+          if (!json.success) showToast(json.message);
+          else {
+            hideModal();
+            setTimeout(() => location.reload(), 500);
+          }
+        })
+        .catch(() => showToast('Error de red al guardar'));
     });
-  }));
-
-  // Guardar
-  form.addEventListener('submit', e => {
-    e.preventDefault();
-    const id = form.id.value;
-    const url = id ? 'update_vehiculo.php' : 'create_vehiculo.php';
-    fetch(url, { method: 'POST', body: new URLSearchParams(new FormData(form)) })
-      .then(r => r.json()).then(json => {
-        if (json.success) { hideModal(); location.reload(); }
-        else showToast(json.message);
-      });
   });
-});
-
   </script>
 </body>
 </html>
