@@ -223,3 +223,10 @@ section.card table th[data-col] {
   margin: auto;
   display: block;
 }
+
+/* Colores para vehículos (clases generadas en PHP y usadas en JS) */
+.vehiculo-lrv301 { background-color: #1E90FF !important; }
+.vehiculo-mtb404 { background-color: #FF6347 !important; }
+.vehiculo-tyt2022sa { background-color: #32CD32 !important; }
+.vehiculo-sda12 { background-color: #FFD700 !important; }
+/* Agrega más colores según tus vehículos */

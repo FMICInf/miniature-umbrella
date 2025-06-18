@@ -49,13 +49,8 @@ try {
     <h1>Gestionar Usuarios</h1>
     <nav>
       <ul class="menu">
-        <li><a href="../admin_dashboard.php">Dashboard</a></li>
-        <li><a href="manage_solicitudes.php">Solicitudes</a></li>
-        <li><a href="manage_asignaciones.php">Asignaciones</a></li>
-        <li><a href="manage_vehiculos.php">Vehículos</a></li>
-        <li><a href="manage_rutas.php">Rutas</a></li>
-        <li><a href="manage_users.php" class="active">Usuarios</a></li>
-        <li><a href="../logout.php">Cerrar sesión</a></li>
+        <li><a href="../admin_dashboard.php">Volver</a></li>
+
       </ul>
     </nav>
   </header>

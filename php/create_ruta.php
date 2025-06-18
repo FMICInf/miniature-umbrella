@@ -1,67 +1,59 @@
 <?php
 // Archivo: php/create_ruta.php
 session_start();
-// DEBUG: retornar datos POST recibidos
-if (!empty($_GET['debug'])) {
-    header('Content-Type: application/json');
-    echo json_encode(['debug' => true, 'post' => $_POST]);
-    exit;
-}
-
 header('Content-Type: application/json');
-require_once __DIR__ . '/config.php';
+require_once __DIR__.'/config.php';
 
-// Solo usuarios autenticados pueden agregar rutas
-if (empty($_SESSION['user_id']) || $_SESSION['rol'] !== 'usuario') {
-    echo json_encode(['success' => false, 'message' => 'No autorizado']);
-    exit;
+// autorización…
+if (empty($_SESSION['user_id'])||$_SESSION['rol']!=='usuario') {
+  echo json_encode(['success'=>false,'message'=>'No autorizado']); exit;
+}
+if ($_SERVER['REQUEST_METHOD']!=='POST') {
+  echo json_encode(['success'=>false,'message'=>'Método no permitido']); exit;
 }
 
-// Recibir datos
-$origen  = trim($_POST['origen']  ?? '');
-$destino = trim($_POST['destino'] ?? '');
-$horario = trim($_POST['horario'] ?? '');
+// recibo y sanitizo
+$origen_label  = trim($_POST['origen_label']  ?? '');
+$destino_label = trim($_POST['destino_label'] ?? '');
+$horario       = trim($_POST['horario_salida'] ?? '');
+$latO          = filter_input(INPUT_POST,'lat_origen', FILTER_VALIDATE_FLOAT);
+$lngO          = filter_input(INPUT_POST,'lng_origen', FILTER_VALIDATE_FLOAT);
+$latD          = filter_input(INPUT_POST,'lat_destino',FILTER_VALIDATE_FLOAT);
+$lngD          = filter_input(INPUT_POST,'lng_destino',FILTER_VALIDATE_FLOAT);
 
-if (!$origen || !$destino || !$horario) {
-    echo json_encode(['success' => false, 'message' => 'Faltan datos para crear ruta']);
-    exit;
+if (!$origen_label||!$destino_label||!$horario
+    || $latO===false||$lngO===false
+    || $latD===false||$lngD===false) {
+  echo json_encode(['success'=>false,'message'=>'Faltan datos para crear ruta']); exit;
 }
 
 try {
-    // Verificar si ya existe
-    $stmtCheck = $pdo->prepare(
-        "SELECT id FROM rutas WHERE origen = ? AND destino = ? AND horario_salida = ?"
-    );
-    $stmtCheck->execute([$origen, $destino, $horario]);
-    $existing = $stmtCheck->fetchColumn();
-    if ($existing) {
-        echo json_encode([
-            'success' => true,
-            'id'      => $existing,
-            'origen'  => $origen,
-            'destino' => $destino,
-            'horario' => $horario
-        ]);
-        exit;
-    }
-
-    // Insertar nueva ruta
-    $stmt = $pdo->prepare(
-        "INSERT INTO rutas (origen, destino, horario_salida) VALUES (?, ?, ?)"
-    );
-    $stmt->execute([$origen, $destino, $horario]);
-    $id = $pdo->lastInsertId();
-
-    echo json_encode([
-        'success' => true,
-        'id'      => $id,
-        'origen'  => $origen,
-        'destino' => $destino,
-        'horario' => $horario
-    ]);
-} catch (PDOException $e) {
-    echo json_encode([
-        'success' => false,
-        'message' => 'Error al crear ruta: ' . $e->getMessage()
-    ]);
+  // si ya existe ruta idéntica (por coords + horario), la devolvemos
+  $chk = $pdo->prepare("
+    SELECT id FROM rutas
+     WHERE lat_origen=? AND lng_origen=? 
+       AND lat_destino=? AND lng_destino=? 
+       AND horario_salida=?
+  ");
+  $chk->execute([$latO,$lngO,$latD,$lngD,$horario]);
+  if ($id = $chk->fetchColumn()) {
+    echo json_encode(['success'=>true,'id'=>$id]); exit;
+  }
+  // insertamos
+  $ins = $pdo->prepare("
+    INSERT INTO rutas
+      (origen, destino, horario_salida,
+       lat_origen, lng_origen, lat_destino, lng_destino)
+    VALUES (?,?,?,?,?,?,?)
+  ");
+  $ins->execute([
+    $origen_label,
+    $destino_label,
+    $horario,
+    $latO, $lngO,
+    $latD, $lngD
+  ]);
+  echo json_encode(['success'=>true,'id'=>$pdo->lastInsertId()]);
+} catch(PDOException $e){
+  echo json_encode(['success'=>false,'message'=>$e->getMessage()]);
 }

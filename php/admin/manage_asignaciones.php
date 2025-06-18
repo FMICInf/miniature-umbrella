@@ -68,10 +68,8 @@ try {
         <h1>Asignaciones</h1>
         <nav>
             <ul class="menu">
-                <li><a href="../admin_dashboard.php">Dashboard</a></li>
-                <li><a href="manage_solicitudes.php">Solicitudes</a></li>
-                <li><a href="manage_asignaciones.php" class="active">Asignaciones</a></li>
-                <li><a href="../logout.php">Cerrar sesión</a></li>
+                <li><a href="../admin_dashboard.php">Volver</a></li>
+
             </ul>
         </nav>
     </header>

@@ -1,4 +1,5 @@
 
+// Archivo: assets/css/js/admin/vehiculos.js
 document.addEventListener('DOMContentLoaded', () => {
   const modal    = document.getElementById('modal');
   const form     = document.getElementById('formVeh');

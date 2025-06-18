@@ -46,27 +46,47 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Función para bloquear horarios ya asignados
+  // Convierte "HH:mm" a minutos desde medianoche
+  function timeToMinutes(t) {
+    const [h, m] = t.split(':').map(Number);
+    return h * 60 + m;
+  }
+
+  // Retorna true si los intervalos [start1,end1) y [start2,end2) se solapan
+  function intervalsOverlap(start1, end1, start2, end2) {
+    return start1 < end2 && start2 < end1;
+  }
+
+  // Bloquear horarios que se solapan con solicitudes confirmadas
   function updateBlockedTimes() {
     const origen  = origenInput.value;
     const destino = destinoInput.value;
     const fecha   = dateInput.value;
     if (!origen || !destino || !fecha) return;
-    fetch(`/log/php/get_assigned_times.php?origen=${encodeURIComponent(origen)}&destino=${encodeURIComponent(destino)}&fecha=${encodeURIComponent(fecha)}`)
+
+    fetch(`/log/php/get_confirmed_intervals.php?origen=${encodeURIComponent(origen)}&destino=${encodeURIComponent(destino)}&fecha=${encodeURIComponent(fecha)}`)
       .then(res => res.json())
       .then(json => {
         if (!json.success) return showToast(json.message);
-        // primero habilitar todas las opciones
+
+        // Habilitar todas las opciones inicialmente
         [timeInput, returnTimeInput].forEach(inp => {
           Array.from(inp.options).forEach(opt => opt.disabled = false);
         });
-        // deshabilitar las ocupadas
-        json.data.forEach(slot => {
-          const start = slot.horario_salida;
-          const end   = slot.hora_regreso;
+
+        // Para cada intervalo ocupado, deshabilitar opciones que solapen
+        json.data.forEach(({ horario_salida, hora_regreso }) => {
+          if (!hora_regreso) return;  // ignorar si no hay hora regreso
+          const busyStart = timeToMinutes(horario_salida);
+          const busyEnd = timeToMinutes(hora_regreso);
+
           [timeInput, returnTimeInput].forEach(inp => {
             Array.from(inp.options).forEach(opt => {
-              if (opt.value === start || (end && opt.value === end)) {
+              if (!opt.value) return;
+              const optStart = timeToMinutes(opt.value);
+              const optEnd = optStart + 30; // asumiendo intervalo 30 min
+
+              if (intervalsOverlap(optStart, optEnd, busyStart, busyEnd)) {
                 opt.disabled = true;
               }
             });
@@ -76,7 +96,7 @@ document.addEventListener('DOMContentLoaded', () => {
       .catch(() => showToast('No se pudieron cargar horarios'));
   }
 
-  // Disparar bloqueo al cambiar ruta o fecha
+  // Disparar bloqueo al cambiar origen, destino o fecha
   [origenInput, destinoInput, dateInput].forEach(el =>
     el.addEventListener('change', updateBlockedTimes)
   );
@@ -93,7 +113,7 @@ document.addEventListener('DOMContentLoaded', () => {
     .then(json => {
       if (json.success) {
         showToast('Solicitud enviada');
-        // actualizar tabla/métricas si lo deseas…
+        // Aquí podrías actualizar la tabla o refrescar la página si quieres
       } else {
         showToast('Error: ' + json.message);
       }

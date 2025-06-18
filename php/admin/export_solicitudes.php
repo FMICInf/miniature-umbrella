@@ -2,71 +2,74 @@
 // Archivo: php/admin/export_solicitudes.php
 session_start();
 require_once __DIR__ . '/../config.php';
-
-// Sólo admin
 if (empty($_SESSION['user_id']) || $_SESSION['rol'] !== 'admin') {
-    http_response_code(403);
+    // opcional: redirigir o retornar error
     exit('No autorizado');
 }
 
-// Cabeceras para descarga Excel
-header("Content-Type: application/vnd.ms-excel; charset=utf-8");
-header("Content-Disposition: attachment; filename=solicitudes.xls");
-header("Pragma: no-cache");
-header("Expires: 0");
+header('Content-Type: text/csv; charset=utf-8');
+header('Content-Disposition: attachment; filename=solicitudes.csv');
 
-// Escritura de BOM para Excel en UTF-8
-echo "\xEF\xBB\xBF";
-
-// Consulta de todas las solicitudes
-$stmt = $pdo->query("
-  SELECT 
-    s.id,
-    u.nombre AS usuario,
-    r.origen,
-    r.destino,
-    s.fecha_solicitada,
-    s.horario_salida,
-    s.hora_regreso,
-    s.motivo,
-    s.motivo_otro,
-    s.adjunto,
-    s.estado,
-    s.creado_at
-  FROM solicitudes s
-  JOIN usuarios u ON s.usuario_id = u.id
-  JOIN rutas   r ON s.ruta_id     = r.id
-  ORDER BY s.creado_at DESC
-");
-
-// Encabezados de columna
-$columns = [
-  'ID','Usuario','Origen','Destino','Fecha','Hora Salida',
-  'Hora Regreso','Motivo','Motivo Otro','Adjunto URL','Estado','Creada En'
+$out = fopen('php://output', 'w');
+// Títulos de columnas: ajusta según lo que desees exportar
+$headers = [
+    'ID',
+    'Usuario',
+    'Departamento',
+    'Carrera',
+    'Ruta',
+    'Fecha Solicitada',
+    'Horario Salida',
+    'Estado',
+    'Motivo Rechazo'
 ];
-echo implode("\t", $columns) . "\r\n";
+fputcsv($out, $headers);
 
-// Recorre resultados
+// Obtener datos: por ejemplo todas (pendientes, confirmadas, rechazadas, etc.)
+// Ajusta la consulta según lo que quieras exportar (p. ej. solo pendientes o todas)
+$sql = "
+    SELECT 
+      s.id,
+      u.nombre AS usuario,
+      s.departamento,
+      s.carrera,
+      s.carrera_otro,
+      r.origen,
+      r.destino,
+      s.fecha_solicitada,
+      s.horario_salida,
+      s.estado,
+      s.motivo_rechazo
+    FROM solicitudes s
+    JOIN usuarios u ON s.usuario_id = u.id
+    JOIN rutas r ON s.ruta_id = r.id
+    ORDER BY s.creado_at ASC
+";
+$stmt = $pdo->query($sql);
 while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-    // Si motivo != Otro limpiamos el campo motivo_otro
-    $motivoOt = ($row['motivo'] === 'Otro') 
-                 ? $row['motivo_otro'] 
-                 : '';
-    // Monta fila
-    $fields = [
-      $row['id'],
-      $row['usuario'],
-      $row['origen'],
-      $row['destino'],
-      $row['fecha_solicitada'],
-      $row['horario_salida'],
-      $row['hora_regreso'] ?: '',
-      $row['motivo'],
-      $motivoOt,
-      $row['adjunto'] ?: '',
-      $row['estado'],
-      $row['creado_at']
+    // Determinar valor de "Carrera" para exportar:
+    if (!empty($row['carrera']) && $row['carrera'] !== 'Otro') {
+        $carreraText = $row['carrera'];
+    } elseif (!empty($row['carrera_otro'])) {
+        $carreraText = $row['carrera_otro'];
+    } else {
+        $carreraText = '';
+    }
+    // Ruta texto:
+    $rutaText = $row['origen'] . ' → ' . $row['destino'];
+
+    $line = [
+        $row['id'],
+        $row['usuario'],
+        $row['departamento'],
+        $carreraText,
+        $rutaText,
+        $row['fecha_solicitada'],
+        $row['horario_salida'],
+        $row['estado'],
+        $row['motivo_rechazo'] ?? ''
     ];
-    echo implode("\t", $fields) . "\r\n";
+    fputcsv($out, $line);
 }
+fclose($out);
 exit;
