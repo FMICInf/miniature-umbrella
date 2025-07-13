@@ -35,65 +35,124 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <title>Iniciar sesión</title>
-  <link rel="stylesheet" href="../assets/css/style.css">
+    <link rel="stylesheet" href="../assets/css/style.css">
     <style>
-        /* Estilos adicionales para centrar el login */
+        body {
+            background: #f5f9fc;
+        }
         .login-wrapper {
-            height: 100vh;
+            min-height: 100vh;
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
-            background-color: #f5f5f5;
+            background: #f5f9fc;
         }
-
+        .logo-uaysen {
+            margin-bottom: 1.5rem;
+            max-width: 230px;
+            width: 80%;
+        }
         .login-box {
             background: white;
-            padding: 2rem;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            padding: 2.2rem 2.5rem;
+            border-radius: 14px;
+            box-shadow: 0 4px 24px rgba(0, 64, 128, 0.12);
             width: 100%;
             max-width: 400px;
+            margin-top: 0;
         }
-
         .login-box h2 {
             margin-bottom: 1.5rem;
             text-align: center;
+            color: #004080;
+            font-weight: 700;
         }
-
-        .login-box .form-group {
-            margin-bottom: 1rem;
+        .form-group {
+            margin-bottom: 1.25rem;
         }
-
-        .login-box .alert-danger {
-            margin-bottom: 1rem;
+        label {
+            font-weight: 600;
+            color: #004080;
+            margin-bottom: 0.35rem;
+            display: block;
+        }
+        input[type="email"], input[type="password"] {
+            width: 100%;
+            padding: 0.7rem;
+            border-radius: 5px;
+            border: 1px solid #b2cbe4;
+            font-size: 1.03rem;
+        }
+        button[type="submit"] {
+            width: 100%;
+            padding: 0.8rem;
+            background: #004080;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            font-weight: bold;
+            font-size: 1.08rem;
+            margin-top: 0.8rem;
+            cursor: pointer;
+            transition: background .2s;
+        }
+        button[type="submit"]:hover {
+            background: #0062bf;
+        }
+        .alert-danger {
+            background: #f8d7da;
+            color: #842029;
+            padding: .75rem;
+            border-radius: 5px;
+            text-align: center;
+            margin-bottom: 1.1rem;
+        }
+        .forgot-link {
+            display: block;
+            margin-top: 15px;
+            text-align: center;
+            font-size: .98rem;
+        }
+        .forgot-link a {
+            color: #004080;
+            text-decoration: underline;
+            transition: color .15s;
+        }
+        .forgot-link a:hover {
+            color: #0099cc;
         }
     </style>
 </head>
 <body>
 
-    <div class="login-wrapper">
-        <div class="login-box">
-            <h2>Iniciar sesión</h2>
+<div class="login-wrapper">
+    <img class="logo-uaysen" src="../assets/img/logo-uaysen_patagonia_sin_fondo.png" alt="Universidad de Aysén">
+    <div class="login-box">
+        <h2>Iniciar sesión</h2>
 
-            <?php if ($error): ?>
-                <div class="alert-danger"><?= htmlspecialchars($error) ?></div>
-            <?php endif; ?>
+        <?php if ($error): ?>
+            <div class="alert-danger"><?= htmlspecialchars($error) ?></div>
+        <?php endif; ?>
 
-            <form method="POST">
-                <div class="form-group">
-                    <label for="email">Correo:</label>
-                    <input type="email" name="email" required>
-                </div>
+        <form method="POST">
+            <div class="form-group">
+                <label for="email">Correo institucional:</label>
+                <input type="email" name="email" id="email" placeholder="nombre@uaysen.cl" required autofocus>
+            </div>
 
-                <div class="form-group">
-                    <label for="password">Contraseña:</label>
-                    <input type="password" name="password" required>
-                </div>
+            <div class="form-group">
+                <label for="password">Contraseña:</label>
+                <input type="password" name="password" id="password" required>
+            </div>
 
-                <button type="submit">Ingresar</button>
-            </form>
-        </div>
+            <button type="submit">Ingresar</button>
+            <div class="forgot-link">
+                <a href="forgot_password.php">¿Olvidaste tu contraseña?</a>
+            </div>
+        </form>
     </div>
+</div>
 
 </body>
 </html>

@@ -14,9 +14,20 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
+// Captura y valida cantidad de pasajeros
+$cantidad_pasajeros = isset($_POST['cantidad_pasajeros']) ? intval($_POST['cantidad_pasajeros']) : 0;
+if ($cantidad_pasajeros < 1) {
+    echo json_encode(['success' => false, 'message' => 'Cantidad de pasajeros no válida']);
+    exit;
+}
+
+
 // 2) Datos de ruta / manual
 $rutaId  = $_POST['ruta_id'] ?: null;
-$origen  = trim($_POST['origen']  ?? '');
+$origen = trim($_POST['origen'] ?? '');
+if ($origen === 'Otro') {
+    $origen = trim($_POST['otro_origen'] ?? '');
+}
 $destino = trim($_POST['destino'] ?? '');
 if ($destino === 'Otro') {
     $destino = trim($_POST['otro_destino'] ?? '');
@@ -42,6 +53,8 @@ else {
     $carrera      = $carrera_raw;
     $carrera_otro = null;
 }
+
+
 
 // 4) Resto de campos
 $fecha       = $_POST['fecha_solicitada'] ?? '';
@@ -69,15 +82,40 @@ if (
 // 6) Manejar adjunto
 $adjunto = null;
 if (!empty($_FILES['adjunto']) && $_FILES['adjunto']['error'] === UPLOAD_ERR_OK) {
-    $uploaddir = __DIR__ . '/../uploads/';
-    if (!is_dir($uploaddir)) mkdir($uploaddir, 0755, true);
+    $uploaddir = __DIR__ . '/uploads/';
+
+    if (!is_dir($uploaddir)) {
+        if (!mkdir($uploaddir, 0755, true)) {
+            echo json_encode(['success' => false, 'message' => 'No se pudo crear la carpeta uploads']);
+            exit;
+        }
+    }
+
     $file = uniqid() . '_' . basename($_FILES['adjunto']['name']);
-    if (move_uploaded_file($_FILES['adjunto']['tmp_name'], "$uploaddir$file")) {
-        $adjunto = 'uploads/' . $file;
-    } else {
-        echo json_encode(['success' => false, 'message' => 'Error subiendo adjunto']);
+    $target = $uploaddir . $file;
+
+    if (!move_uploaded_file($_FILES['adjunto']['tmp_name'], $target)) {
+        $error = error_get_last();
+        echo json_encode([
+            'success' => false,
+            'message' => 'Error subiendo adjunto',
+            'debug'   => [
+                'tmp_name' => $_FILES['adjunto']['tmp_name'],
+                'target'   => $target,
+                'last_error' => $error
+            ]
+        ]);
         exit;
     }
+
+    $adjunto = 'uploads/' . $file;
+} elseif (!empty($_FILES['adjunto']) && $_FILES['adjunto']['error'] !== UPLOAD_ERR_NO_FILE) {
+    echo json_encode([
+        'success' => false,
+        'message' => 'Error en archivo adjunto',
+        'code' => $_FILES['adjunto']['error']
+    ]);
+    exit;
 }
 
 // 7) Si no llegó ruta_id, buscamos o creamos una ruta manual
@@ -106,26 +144,30 @@ if (!$rutaId) {
 // 8) Insertar solicitud
 try {
     $ins = $pdo->prepare("
-      INSERT INTO solicitudes
-        (usuario_id, ruta_id,
-         departamento, carrera, carrera_otro,
-         fecha_solicitada, horario_salida, hora_regreso,
-         motivo, motivo_otro, adjunto, estado)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pendiente')
-    ");
-    $ins->execute([
-      $_SESSION['user_id'],
-      $rutaId,
-      $departamento,
-      $carrera,
-      $carrera_otro,
-      $fecha,
-      $salida,
-      $regreso ?: null,
-      $motivo,
-      $motivo_otro,
-      $adjunto
-    ]);
+  INSERT INTO solicitudes
+    (usuario_id, ruta_id,
+     departamento, carrera, carrera_otro,
+     fecha_solicitada, horario_salida, hora_regreso,
+     cantidad_pasajeros, -- ESTE ES EL CAMPO NUEVO
+     motivo, motivo_otro, adjunto, estado)
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pendiente')
+");
+$ins->execute([
+  $_SESSION['user_id'],
+  $rutaId,
+  $departamento,
+  $carrera,
+  $carrera_otro,
+  $fecha,
+  $salida,
+  $regreso ?: null,
+  $cantidad_pasajeros,        // Y AQUÍ EL NUEVO VALOR
+  $motivo,
+  $motivo_otro,
+  $adjunto
+]);
+
+
     echo json_encode(['success'=>true]);
 } catch (PDOException $e) {
     echo json_encode(['success'=>false,'message'=>'Error BD: '.$e->getMessage()]);

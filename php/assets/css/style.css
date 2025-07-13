@@ -1,0 +1,414 @@
+/* Base styles */
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background-color: #f5f5f5;
+  color: #333;
+}
+header {
+  background-color: #004080;
+  color: #fff;
+  padding: 1rem;
+}
+.header-inner {
+  max-width: 900px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+header h1 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+.menu {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  gap: 1rem;
+}
+.menu li a {
+  color: #fff;
+  text-decoration: none;
+  font-weight: bold;
+}
+.container, main {
+  max-width: 900px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+.form-group {
+  margin-bottom: 1rem;
+  display: flex;
+  flex-direction: column;
+}
+.form-group label {
+  font-weight: bold;
+  margin-bottom: .5rem;
+}
+input, select, textarea {
+  padding: .5rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .95rem;
+}
+button {
+  padding: .75rem 1.5rem;
+  background-color: #004080;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: .95rem;
+}
+button:hover {
+  background-color: #003060;
+}
+#calendar {
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  padding: 1rem;
+}
+.alert-danger {
+  background-color: #f8d7da;
+  color: #842029;
+  padding: .75rem;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+}
+ul li {
+  margin-bottom: .5rem;
+}
+
+/* ===================================================
+   Overrides para "Gestionar Vehículos" (admin)
+   =================================================== */
+
+/* GRID DE FILTROS */
+#filters {
+  display: grid;
+  grid-template-columns:
+    minmax(200px, 1fr)
+    minmax(150px, 1fr)
+    minmax(180px, 1fr)
+    repeat(4, auto);
+  gap: .75rem;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+#filters input[type="text"],
+#filters select,
+#filters button,
+#filters input[type="file"] {
+  padding: .5rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .95rem;
+}
+#filters button {
+  background: #004080;
+  color: #fff;
+}
+#filters button:hover {
+  background: #003060;
+}
+#filters input[type="file"] {
+  cursor: pointer;
+  font-size: .9rem;
+}
+
+/* TABLA */
+section.card table {
+  width: 100%;
+  border-collapse: collapse;
+  display: block;
+  overflow-x: auto;
+}
+section.card table th,
+section.card table td {
+  padding: .75rem;
+  text-align: left;
+  border-bottom: 1px solid #ddd;
+  white-space: nowrap;
+}
+section.card table th {
+  background: #004080;
+  color: #fff;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+section.card table th[data-col] {
+  cursor: pointer;
+}
+
+/* PAGINACIÓN */
+#pagination {
+  margin-top: 1rem;
+  text-align: center;
+}
+#pagination button {
+  margin: 0 .25rem;
+  padding: .4rem .8rem;
+  border: 1px solid #004080;
+  background: #fff;
+  color: #004080;
+  border-radius: 4px;
+  cursor: pointer;
+}
+#pagination button:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
+
+/* DETALLE */
+.detail-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.2rem;
+}
+
+/* MODALES */
+.modal {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,0.5);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+.modal-content {
+  background: #fff;
+  padding: 2rem;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 500px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  max-height: 90%;
+  overflow-y: auto;
+  position: relative;
+}
+.modal-close {
+  position: absolute;
+  top: .5rem; right: .5rem;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #666;
+}
+.modal-content label {
+  display: block;
+  margin-bottom: 1rem;
+  font-size: .95rem;
+}
+.modal-actions {
+  text-align: right;
+  margin-top: 1.5rem;
+}
+.modal-actions .btn {
+  margin-left: .5rem;
+  padding: .5rem 1rem;
+}
+
+/* GRÁFICO */
+.card canvas {
+  width: 100% !important;
+  max-width: 400px;
+  margin: auto;
+  display: block;
+}
+
+/* Colores para vehículos (clases generadas en PHP y usadas en JS) */
+.vehiculo-lrv301 { background-color: #1E90FF !important; }
+.vehiculo-mtb404 { background-color: #FF6347 !important; }
+.vehiculo-tyt2022sa { background-color: #32CD32 !important; }
+.vehiculo-sda12 { background-color: #FFD700 !important; }
+/* Agrega más colores según tus vehículos */
+
+
+
+/* === DASHBOARD HEADER Y NAVEGACIÓN === */
+.header-bar {
+  background: #fff;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  padding: 0;
+  border-bottom: 1.5px solid #e0eaf2;
+}
+.header-content {
+  max-width: 2000px;
+  margin: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;   /* esto separa izq/der */
+  padding: 0.25rem 1.1rem 0.23rem 1.1rem;  /* menos altura */
+  min-height: 62px;  /* controla el alto total */
+}
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.logo-header {
+  height: 85px;  /* Logo más pequeño y proporcional */
+  width: auto;
+}
+.bienvenido {
+  font-size: 1.10rem;
+  color: #004080;
+  font-weight: 500;
+  margin-left: 10px;
+}
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.nav-btn {
+  background: #004080;
+  color: #fff;
+  padding: 0.36rem 1.05rem;
+  border-radius: 15px;
+  font-weight: 600;
+  text-decoration: none;
+  font-size: 0.98rem;
+  transition: background 0.14s;
+  margin-right: 1.5px;
+}
+.nav-btn:hover { background: #2560ab; }
+.logout { background: #e74c3c !important; }
+.logout:hover { background: #b43b2b !important; }
+
+@media (max-width: 700px) {
+  .header-content { flex-direction: column; align-items: stretch; gap: 6px; }
+  .header-left, .header-right { justify-content: flex-start; }
+}
+
+/* === DASHBOARD CARDS Y MÉTRICAS === */
+.metrics {
+  display: grid; 
+  grid-template-columns: repeat(auto-fit,minmax(200px,1fr)); 
+  gap:2.3rem; 
+  margin-bottom:2.8rem;
+}
+.card {
+  background:#fff;
+  padding:1.4rem 0.7rem;
+  border-radius:12px;
+  box-shadow:0 3px 18px rgba(0,32,80,0.07);
+  text-align:center;
+  border-bottom: 4px solid #32cdcf20;
+}
+.card h3 {
+  margin: 0 0 .6rem 0;
+  color: #0073bb;
+  font-weight: 600;
+  font-size: 1.12rem;
+  letter-spacing: 0.01em;
+}
+.card p {
+  font-size: 2.5rem;
+  color: #004080;
+  margin: 0;
+  font-weight: 700;
+}
+
+/* === DASHBOARD FILTRO CALENDARIO === */
+.filter {
+  margin-bottom:1.4rem;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow:0 2px 10px rgba(0,32,80,0.04);
+  padding: 1.2rem 1rem 0.8rem 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1.2rem;
+}
+.filter label {
+  font-weight: 500;
+  color: #175072;
+  margin-right: 0.4rem;
+}
+.filter input[type="date"] {
+  padding: 0.45rem 0.7rem;
+  border-radius: 5px;
+  border: 1px solid #b2cbe4;
+  margin-right: 0.7rem;
+  font-size: 1.04rem;
+}
+.filter button {
+  padding: 0.5rem 1.25rem;
+  border-radius: 5px;
+  background: #004080;
+  color: #fff;
+  font-weight: 600;
+  border: none;
+  margin-right: 0.7rem;
+  font-size: 1.05rem;
+  cursor: pointer;
+  transition: background 0.18s;
+}
+.filter button:hover {
+  background: #0098d6;
+}
+
+/* === DASHBOARD AYUDA Y ICONO === */
+.help-icon {
+  display: inline-block;
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: #004080;
+  color: #fff;
+  text-align: center;
+  line-height: 28px;
+  font-size: 20px;
+  font-weight: bold;
+  cursor: pointer;
+  margin-left: 8px;
+  vertical-align: middle;
+  user-select: none;
+  transition: background 0.2s;
+}
+.help-icon:hover { background: #0072d1; }
+
+/* === CALENDARIO FULLCALENDAR INTERACTIVO === */
+#calendar .fc-daygrid-day,
+#calendar .fc-daygrid-day-frame,
+#calendar .fc-daygrid-day-top,
+#calendar .fc-daygrid-day-number,
+#calendar .fc-event {
+  cursor: pointer !important;
+  transition: background 0.25s;
+}
+#calendar .fc-daygrid-day:hover,
+#calendar .fc-daygrid-day-frame:hover {
+  background: #e0f0fb !important;
+}
+
+/* === TABLAS Y UPCOMING === */
+table    { width:100%; border-collapse:collapse; margin-top:2rem; }
+th,td    { padding:.75rem; border-bottom:1px solid #e0e5ef; text-align:left; }
+th       { background:#004080; color:#fff; font-weight: 600;}
+.upcoming h2 {margin-bottom: .5rem;}
+
+/* === MODALES DE AYUDA (dashboard) === */
+.modal-ayuda .slide-ayuda { min-height: 260px; }
+.modal-ayuda button:disabled { background:#cccccc; cursor:not-allowed; }
+.modal-ayuda {
+  animation: fadeIn .23s;
+}
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+/* === Colores de vehículos para el calendario === */
+.vehiculo-lrv301    { background-color: #1E90FF !important; }
+.vehiculo-mtb404    { background-color: #FF6347 !important; }
+.vehiculo-tyt2022sa { background-color: #32CD32 !important; }
+.vehiculo-sda12     { background-color: #FFD700 !important; }
+
+

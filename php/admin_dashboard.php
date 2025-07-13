@@ -124,6 +124,15 @@ try {
         <a href="admin/manage_asignaciones.php">Ir a Asignaciones →</a>
       </div>
 
+      <!-- Agregar esto donde van los accesos rápidos/paneles -->
+     <div class="card-option">
+  <div class="icon"><i class="fas fa-chart-bar"></i></div>
+  <h3>Estadísticas</h3>
+  <a href="admin/estadisticas.php">Ir a Estadísticas →</a>
+</div>
+
+
+
       <div class="card-option">
         <div class="icon"><i class="fas fa-sign-out-alt"></i></div>
         <h3>Cerrar Sesión</h3>
